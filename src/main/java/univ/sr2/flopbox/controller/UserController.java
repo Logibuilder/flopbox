@@ -1,4 +1,4 @@
 package univ.sr2.flopbox.controller;
 
-public class UserCOntroller {
+public class UserController {
 }
