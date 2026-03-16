@@ -6,6 +6,7 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import univ.sr2.flopbox.dto.FtpItem;
+import univ.sr2.flopbox.dto.ServerRequest;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.repository.ServerRepository;
 
@@ -48,4 +49,7 @@ public class ServerService {
         return ftpService.listDirectory(ftpClient, path);
     }
 
+    public  Server addServer(ServerRequest serverRequest) {
+        return serverRepository.save(serverRequest.toServer());
+    }
 }

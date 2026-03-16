@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import univ.sr2.flopbox.dto.ApiResponse;
 import univ.sr2.flopbox.dto.FtpItem;
+import univ.sr2.flopbox.dto.ServerRequest;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.service.ServerService;
 
@@ -63,5 +64,13 @@ public class ServerController {
             // 6. Déconnexion automatique et propre
             serverService.disconnect(ftpClient);
         }
+    }
+
+    @PostMapping()
+    public ResponseEntity<ApiResponse<ServerRequest>> addServe(@RequestBody ServerRequest serverRequest) {
+        Server savedServer =  serverService.addServer(serverRequest);
+        ServerRequest responseDto =  ServerRequest.toRequest(savedServer);
+        return ResponseEntity.status(HttpStatus.CREATED
+        ).body(ApiResponse.success(201, responseDto, "Serveur créé avec succès"));
     }
 }
