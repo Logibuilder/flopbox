@@ -1,6 +1,7 @@
 package univ.sr2.flopbox.controller;
 
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,25 +16,25 @@ import univ.sr2.flopbox.service.ServerService;
 
 import java.io.IOException;
 import java.util.List;
-
+@Slf4j
 @RestController
-@RequestMapping("api/servers")
+@RequestMapping("api/v1/servers")
 public class ServerController {
 
 
     @Autowired
     private ServerService serverService;
 
-    @GetMapping("/{id}/directory")
+    @GetMapping("/{host}/directory")
     public ResponseEntity<ApiResponse<List<FtpItem>>> listDirectory(
-            @PathVariable("id") int id,
+            @PathVariable("host") String host,
             @RequestParam("path") String path,
             @RequestHeader(value = "X-FTP-Username", defaultValue = "anonymous") String ftpUser,
             @RequestHeader(value = "X-FTP-Password", defaultValue = "") String ftpPassword) {
 
         // 1. On passe par le service pour récupérer le serveur
-        Server server = serverService.getServerById(id);
-
+        Server server = serverService.getServerByHost(host);
+        log.debug("le server en question "+ String.valueOf(server));
         if (server == null) {
             // On utilise notre Record ApiResponse.error() pour garder la structure JSON propre
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
@@ -90,7 +91,7 @@ public class ServerController {
         try {
             Server deletedServer = serverService.deleteServer(deleteServerRequest);
             ServerRequest responseDto = ServerRequest.toRequest(deletedServer);
-            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(20,responseDto, "Serveur supprimé avec succès"));
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(200,responseDto, "Serveur supprimé avec succès"));
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(404, e.getMessage()));

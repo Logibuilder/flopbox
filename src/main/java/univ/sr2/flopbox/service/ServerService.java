@@ -13,8 +13,6 @@ import univ.sr2.flopbox.repository.ServerRepository;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Optional;
-
 @NoArgsConstructor
 @AllArgsConstructor
 @Service
@@ -72,5 +70,10 @@ public class ServerService {
 
         //Renvoyer l'objet pour que le contrôleur puisse confirmer ce qui a été supprimé
         return server;
+    }
+
+    public Server getServerByHost(String host) {
+        return serverRepository.findByHost(host)
+                .orElseThrow(() -> new RuntimeException("Serveur non trouvé avec l'hôte : " + host));
     }
 }
