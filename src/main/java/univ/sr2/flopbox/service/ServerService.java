@@ -5,6 +5,7 @@ import lombok.NoArgsConstructor;
 import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import univ.sr2.flopbox.dto.DeleteServerRequest;
 import univ.sr2.flopbox.dto.FtpItem;
 import univ.sr2.flopbox.dto.ServerRequest;
 import univ.sr2.flopbox.model.Server;
@@ -12,6 +13,7 @@ import univ.sr2.flopbox.repository.ServerRepository;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -50,6 +52,25 @@ public class ServerService {
     }
 
     public  Server addServer(ServerRequest serverRequest) {
+
+        if (serverRepository.findByHost(serverRequest.host()).isPresent()) {
+            throw new RuntimeException("Un serveur avec cet hôte existe déjà.");
+        }
         return serverRepository.save(serverRequest.toServer());
+    }
+
+    public List<Server> getServer() {
+
+        return  serverRepository.findAll();
+    }
+
+    public Server deleteServer(DeleteServerRequest deleteServerRequest) {
+        Server server = serverRepository.findByHost(deleteServerRequest.host())
+                .orElseThrow(() -> new RuntimeException("Serveur non trouvé avec l'hôte : " + deleteServerRequest.host()));
+
+        serverRepository.delete(server);
+
+        // Renvoyer l'objet pour que le contrôleur puisse confirmer ce qui a été supprimé
+        return server;
     }
 }

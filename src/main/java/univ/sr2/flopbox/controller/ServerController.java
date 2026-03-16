@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import univ.sr2.flopbox.dto.ApiResponse;
+import univ.sr2.flopbox.dto.DeleteServerRequest;
 import univ.sr2.flopbox.dto.FtpItem;
 import univ.sr2.flopbox.dto.ServerRequest;
 import univ.sr2.flopbox.model.Server;
@@ -18,11 +19,6 @@ import java.util.List;
 @RestController
 @RequestMapping("api/servers")
 public class ServerController {
-
-    @GetMapping
-    public String hello() {
-        return "Hello";
-    }
 
 
     @Autowired
@@ -67,10 +63,37 @@ public class ServerController {
     }
 
     @PostMapping()
-    public ResponseEntity<ApiResponse<ServerRequest>> addServe(@RequestBody ServerRequest serverRequest) {
-        Server savedServer =  serverService.addServer(serverRequest);
-        ServerRequest responseDto =  ServerRequest.toRequest(savedServer);
-        return ResponseEntity.status(HttpStatus.CREATED
-        ).body(ApiResponse.success(201, responseDto, "Serveur créé avec succès"));
+    public ResponseEntity<ApiResponse<ServerRequest>> addServer(@RequestBody ServerRequest serverRequest) {
+
+        try {
+            Server savedServer = serverService.addServer(serverRequest);
+            ServerRequest responseDto = ServerRequest.toRequest(savedServer);
+            return ResponseEntity.status(HttpStatus.CREATED
+            ).body(ApiResponse.success(201, responseDto, "Serveur créé avec succès"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(400, e.getMessage()));
+        }
     }
-}
+
+    @GetMapping()
+    public ResponseEntity<ApiResponse<List<ServerRequest>>> getServeur() {
+        List<ServerRequest> responseDto =  serverService.getServer().stream().map(ServerRequest::toRequest).toList();
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(ApiResponse.success(200, responseDto, "Liste des serveurs recupérée avec succés"));
+    }
+
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<ServerRequest>> deleteServer(@RequestBody DeleteServerRequest deleteServerRequest) {
+
+        try {
+            Server deletedServer = serverService.deleteServer(deleteServerRequest);
+            ServerRequest responseDto = ServerRequest.toRequest(deletedServer);
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(20,responseDto, "Serveur supprimé avec succès"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(404, e.getMessage()));
+        }
+    }
+ }
