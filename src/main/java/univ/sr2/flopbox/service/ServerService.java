@@ -70,7 +70,7 @@ public class ServerService {
 
         serverRepository.delete(server);
 
-        // Renvoyer l'objet pour que le contrôleur puisse confirmer ce qui a été supprimé
+        //Renvoyer l'objet pour que le contrôleur puisse confirmer ce qui a été supprimé
         return server;
     }
 }
