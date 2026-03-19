@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 
 @NoArgsConstructor
@@ -21,8 +22,8 @@ public class FileService {
         ftpService.downloadFile(ftpClient, path, outputStream);
     }
 
-    public void uploadFile(String path) {
-
+    public void uploadFile(FTPClient ftpClient, String path, InputStream inputStream, boolean replace) throws IOException {
+        ftpService.uploadFile(ftpClient, path, inputStream, replace);
     }
 
     public void deleteFile(String path) {

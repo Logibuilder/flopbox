@@ -5,6 +5,7 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 import org.springframework.stereotype.Service;
 import univ.sr2.flopbox.dto.FtpItem;
+import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,6 +14,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class FTPService {
 
@@ -80,32 +82,38 @@ public class FTPService {
     }
 
     public void uploadFile(FTPClient ftpClient, String path, InputStream inputStream, boolean replace) throws IOException {
+        log.info("Début de la procédure d'upload pour le chemin : {}", path);
 
+        log.debug("Passage en mode passif local...");
         ftpClient.enterLocalPassiveMode();
 
-        //  Vérifier si le fichier existe déjà
-        // listNames renvoie un tableau contenant le nom du fichier s'il existe
+        // Vérifier si le fichier existe déjà
+        log.debug("Vérification de l'existence du fichier : {}", path);
         String[] existingFiles = ftpClient.listNames(path);
         boolean exists = (existingFiles != null && existingFiles.length > 0);
 
         if (exists) {
             if (!replace) {
-                // Si le fichier existe et qu'on ne veut pas remplacer, on annule
+                log.warn("L'upload a échoué : le fichier existe déjà et le remplacement est désactivé.");
                 throw new IOException("Le fichier existe déjà et le remplacement n'est pas autorisé : " + path);
             }
-            // Si replace est vrai, storeFile écrasera automatiquement le fichier existant
-            System.out.println("Remplacement du fichier existant : " + path);
+            log.info("Le fichier existe déjà. Le mode 'replace' est actif, écrasement en cours...");
         }
 
-        //  Exécuter l'upload (storeFile crée ou remplace le fichier)
         try (inputStream) {
+            log.debug("Exécution de ftpClient.storeFile()...");
             boolean success = ftpClient.storeFile(path, inputStream);
 
             if (!success) {
-                throw new IOException("Échec de l'upload (Réponse du serveur : " + ftpClient.getReplyString() + ")");
+                String reply = ftpClient.getReplyString();
+                log.error("Échec critique de l'upload. Réponse du serveur FTP : {}", reply);
+                throw new IOException("Échec de l'upload (Réponse du serveur : " + reply + ")");
             }
+
+            log.info("Upload terminé avec succès pour le fichier : {}", path);
         } catch (IOException e) {
-            throw e; // On propage l'erreur pour que le Controller puisse la gérer
+            log.error("Erreur d'entrée/sortie pendant le transfert FTP : {}", e.getMessage(), e);
+            throw e;
         }
     }
 

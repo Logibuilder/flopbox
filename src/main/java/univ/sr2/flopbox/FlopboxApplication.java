@@ -23,12 +23,14 @@ public class FlopboxApplication {
 				// Création des serveurs (l'ID 0 indique à JPA de générer l'ID automatiquement)
 				Server freeServer = new Server(0, "ftp.free.fr", "Serveur Free", 21);
 				Server ubuntuServer = new Server(0, "ftp.ubuntu.com", "Serveur Ubuntu", 21);
+				Server localhost = new Server(0, "localhost", "server local", 8081);
 
 				// Sauvegarde dans la base H2
 				serverRepository.save(freeServer);
 				serverRepository.save(ubuntuServer);
+				serverRepository.save(localhost);
 
-				System.out.println("✅ Base de données initialisée avec les serveurs Free et Ubuntu !");
+				System.out.println("✅ Base de données initialisée avec les serveurs Free et Ubuntu et localhost !");
 			} else {
 				System.out.println("ℹ️ La base de données contient déjà des serveurs.");
 			}
