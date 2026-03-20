@@ -92,4 +92,8 @@ public class ServerService {
         // On sauvegarde les modifications dans la base de données
         return serverRepository.save(existingServer);
     }
+
+    public List<FtpItem> searchFile(FTPClient ftpClient, String searchQuery) throws IOException {
+        return  ftpService.seachFile(ftpClient, searchQuery);
+    }
 }

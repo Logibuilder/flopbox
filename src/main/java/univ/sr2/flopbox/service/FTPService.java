@@ -8,10 +8,12 @@ import org.springframework.stereotype.Service;
 import univ.sr2.flopbox.dto.FtpItem;
 import lombok.extern.slf4j.Slf4j;
 import univ.sr2.flopbox.dto.FtpResponse;
+import univ.sr2.flopbox.dto.Type;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,17 +49,32 @@ public class FTPService {
     }
 
     public List<FtpItem> listDirectory(FTPClient ftpClient, String path) throws IOException {
-        //en mode passive
         ftpClient.enterLocalPassiveMode();
 
-        FTPFile[] files = ftpClient.listFiles(path);
+        // Astuce : Si le chemin est "/", on envoie "" pour lister le dossier courant par défaut
+        String ftpPath = path.equals("/") ? "" : path;
 
-        return Arrays.stream(files).map(file -> new FtpItem(
-                path + "/" + file.getName(),
-                file.isDirectory() ? "DIRECTORY" : "FILE",
-                file.getSize(),
-                file.getTimestamp() != null ? file.getTimestamp().getTime().toString() : "Inconnu"
-        )).collect(Collectors.toList());
+        FTPFile[] files = ftpClient.listFiles(ftpPath);
+
+        // Sécurité anti-crash au cas où le serveur refuse de lister le dossier
+        if (files == null) {
+            log.warn("Le serveur n'a renvoyé aucun fichier pour le chemin : '{}'", path);
+            return new ArrayList<>();
+        }
+
+        log.info("Dossier '{}' listé : {} éléments trouvés.", path, files.length);
+
+        return Arrays.stream(files).map(file -> {
+            String cleanPath = path.endsWith("/") ? path + file.getName() : path + "/" + file.getName();
+
+            return new FtpItem(
+                    cleanPath,
+                    file.getName(),
+                    file.isDirectory() ? Type.DIRECTORY : Type.FILE,
+                    file.getSize(),
+                    file.getTimestamp() != null ? file.getTimestamp().getTime().toString() : "Inconnu"
+            );
+        }).collect(Collectors.toList());
     }
 
     /**
@@ -228,8 +245,37 @@ public class FTPService {
                     null
             );
         }
+    }
+    public List<FtpItem> seachFile(FTPClient ftpClient, String searchQuery) throws IOException {
+        List<FtpItem> resultats = new ArrayList<>();
+
+        seachFile(ftpClient, "/", searchQuery, resultats, 0);
+        return resultats;
+    }
 
 
-        //public FtpResponse<Lis>
+    public void seachFile(FTPClient ftpClient,String currentPath, String searchQuery, List<FtpItem> res, int currentDepth) throws IOException {
+
+
+        if (res.size() >= 5 || currentDepth >= 3) return;
+        try {
+            for (FtpItem f : this.listDirectory(ftpClient, currentPath)) {
+
+                if (f.name().equals(".") || f.name().equals("..")) {
+                    continue;
+                }
+
+                if (f.name().toLowerCase().contains(searchQuery.toLowerCase())) {
+                    res.add(f);
+                    if (res.size() >= 5) return;
+                }
+
+                if (f.type() == Type.DIRECTORY) {
+                    seachFile(ftpClient, f.path(), searchQuery, res, currentDepth + 1);
+                }
+            }
+        } catch (IOException e) {
+            log.warn("Impossible de lire le dossier {} : {}", currentPath, e.getMessage());
+        }
     }
 }
