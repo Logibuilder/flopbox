@@ -61,4 +61,23 @@ public class ServerController {
                     .body(ApiResponse.error(404, e.getMessage()));
         }
     }
+
+    @PutMapping("/{host}")
+    public ResponseEntity<ApiResponse<ServerRequest>> updateServer(
+            @PathVariable String host,
+            @RequestBody ServerRequest updateRequest) {
+
+        try {
+            // Appel au service pour faire la mise à jour
+            Server updatedServer = serverService.updateServer(host, updateRequest);
+            ServerRequest responseDto = ServerRequest.toRequest(updatedServer);
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.success(200, responseDto, "Serveur mis à jour avec succès"));
+        } catch (RuntimeException e) {
+            // Si le serveur n'existe pas, on renvoie une 404
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(404, e.getMessage()));
+        }
+    }
  }

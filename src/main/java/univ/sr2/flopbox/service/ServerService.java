@@ -74,4 +74,22 @@ public class ServerService {
         return serverRepository.findByHost(host)
                 .orElseThrow(() -> new RuntimeException("Serveur non trouvé avec l'hôte : " + host));
     }
+
+    public Server updateServer(String currentHost, ServerRequest updateRequest) {
+        Server existingServer = serverRepository.findByHost(currentHost)
+                .orElseThrow(() -> new RuntimeException("Serveur non trouvé avec l'hôte : " + currentHost));
+
+        // vérifier si le NOUVEL hôte existe déjà (pour éviter les doublons si on change le host)
+        if (!currentHost.equals(updateRequest.host()) && serverRepository.findByHost(updateRequest.host()).isPresent()) {
+            throw new RuntimeException("Un serveur avec ce nouvel hôte existe déjà.");
+        }
+
+        // On met à jour les champs
+        existingServer.setAlias(updateRequest.alias());
+        existingServer.setHost(updateRequest.host());
+        existingServer.setPort(updateRequest.port());
+
+        // On sauvegarde les modifications dans la base de données
+        return serverRepository.save(existingServer);
+    }
 }
