@@ -104,5 +104,41 @@ public class DirectoryController {
                 log.debug("Déconnexion du serveur FTP effectuée.");
             }
         }
+
+
+    }
+
+    @DeleteMapping()
+    public ResponseEntity<ApiResponse<String>> deleteDirectory(
+            @PathVariable String host,
+            @RequestParam String path,
+            @RequestHeader(value = "X-FTP-Username", defaultValue = "anonymous") String ftpUser,
+            @RequestHeader(value = "X-FTP-Password", defaultValue = "") String ftpPassword) throws IOException {
+
+        Server server = serverService.getServerByHost(host);
+
+        FTPClient ftpClient = null;
+
+        try {
+            ftpClient = serverService.connect(server, ftpUser, ftpPassword);
+
+            FtpResponse<Void> ftpResponse = directoryService.delete(ftpClient, path);
+
+            if (!ftpResponse.succes()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, ftpResponse.message()));
+            }
+
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.error(200, "Suppréssion réussie"));
+        } catch (Exception e) {
+            log.error("Erreur interceptée dans le contrôleur : {}", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ApiResponse.error(500, "Erreur lors de la suppression : " + e.getMessage()));
+
+        } finally {
+            if (ftpClient != null) {
+                serverService.disconnect(ftpClient);
+                log.debug("Déconnexion du serveur FTP effectuée.");
+            }
+        }
     }
 }

@@ -28,7 +28,7 @@ public class  FileService {
     }
 
     public FtpResponse<Void> delete(FTPClient ftpClient, String path) throws IOException {
-        return ftpService.delete(ftpClient, path);
+        return ftpService.deleteFile(ftpClient, path);
     }
 
     public FtpResponse<Void> rename(FTPClient ftpClient, String oldName, String newName) throws IOException {

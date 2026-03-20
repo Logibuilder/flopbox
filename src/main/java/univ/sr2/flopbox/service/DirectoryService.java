@@ -25,4 +25,8 @@ public class DirectoryService {
     public FtpResponse<Void> makeDirectory(FTPClient ftpClient, String path) {
         return ftpService.makeDirectory(ftpClient, path);
     }
+
+    public FtpResponse<Void> delete(FTPClient ftpClient, String path) throws IOException {
+        return ftpService.deleteDirectory(ftpClient, path);
+    }
 }

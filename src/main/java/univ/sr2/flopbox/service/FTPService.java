@@ -161,7 +161,7 @@ public class FTPService {
         }
     }
 
-    public FtpResponse<Void> delete(FTPClient ftpClient, String path) throws IOException {
+    public FtpResponse<Void> deleteFile(FTPClient ftpClient, String path) throws IOException {
         try {
             boolean success = ftpClient.deleteFile(path);
 
@@ -179,6 +179,27 @@ public class FTPService {
             return new FtpResponse<>(false, "Erreur IO suppression : " + e.getMessage(), null);
         }
     }
+
+    public FtpResponse<Void> deleteDirectory(FTPClient ftpClient, String path) throws IOException {
+        try {
+            boolean success = ftpClient.removeDirectory(path);
+
+            if (success) {
+                return new FtpResponse<>(true, path + " supprimé avec succès", null);
+            }
+
+
+            return new FtpResponse<>(false, ftpClient.getReplyString(), null);
+
+        } catch (IOException e) {
+
+            log.error("Erreur IO pendant la suppression : {}", e.getMessage());
+
+            return new FtpResponse<>(false, "Erreur IO suppression : " + e.getMessage(), null);
+        }
+    }
+
+
 
     public FtpResponse<Void> makeDirectory(FTPClient ftpClient, String path) {
 
