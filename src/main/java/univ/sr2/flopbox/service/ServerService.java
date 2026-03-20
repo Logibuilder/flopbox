@@ -45,9 +45,7 @@ public class ServerService {
         return serverRepository.findById(id).orElse(null);
     }
 
-    public List<FtpItem> listDirectory(FTPClient ftpClient, String path) throws IOException {
-        return ftpService.listDirectory(ftpClient, path);
-    }
+
 
     public  Server addServer(ServerRequest serverRequest) {
 

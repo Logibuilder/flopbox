@@ -1,11 +1,13 @@
 package univ.sr2.flopbox.service;
 
+import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 import org.springframework.stereotype.Service;
 import univ.sr2.flopbox.dto.FtpItem;
 import lombok.extern.slf4j.Slf4j;
+import univ.sr2.flopbox.dto.FtpResponse;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,7 +85,7 @@ public class FTPService {
 
     public void uploadFile(FTPClient ftpClient, String path, InputStream inputStream, boolean replace) throws IOException {
         log.info("Début de la procédure d'upload pour le chemin : {}", path);
-
+        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
         log.debug("Passage en mode passif local...");
         ftpClient.enterLocalPassiveMode();
 
@@ -123,7 +125,7 @@ public class FTPService {
 
     public void downloadFile(FTPClient ftpClient, String path, OutputStream outputStream) throws IOException {
 
-        ftpClient.setFileType(org.apache.commons.net.ftp.FTP.BINARY_FILE_TYPE);
+        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 
         ftpClient.enterLocalPassiveMode();
 
@@ -131,6 +133,92 @@ public class FTPService {
 
         if (!success) {
             throw new IOException("Erreur lors du téléchargement du fichier : " + path);
+        }
+    }
+
+    public FtpResponse<Void> rename(FTPClient ftpClient, String oldName, String newName) throws IOException {
+
+        try {
+            boolean success = ftpClient.rename(oldName, newName);
+
+            if (!success) {
+                return new FtpResponse<>(
+                        false,
+                        ftpClient.getReplyString(),
+                        null);
+            }
+
+            return new FtpResponse<>(
+                    true,
+                    "Fichier renommé avec succès",
+                    null);
+        } catch (IOException e) {
+            log.error("Erreur IO pendant l'opération : {}", e.getMessage(), e);
+            return new FtpResponse<>(
+                    false,
+                    "Erreur IO : " + e.getMessage(), // Concaténation standard en Java
+                    null);
+        }
+    }
+
+    public FtpResponse<Void> delete(FTPClient ftpClient, String path) throws IOException {
+        try {
+            boolean success = ftpClient.deleteFile(path);
+
+            if (success) {
+                return new FtpResponse<>(true, path + " supprimé avec succès", null);
+            }
+
+
+            return new FtpResponse<>(false, ftpClient.getReplyString(), null);
+
+        } catch (IOException e) {
+
+            log.error("Erreur IO pendant la suppression : {}", e.getMessage(), e);
+
+            return new FtpResponse<>(false, "Erreur IO suppression : " + e.getMessage(), null);
+        }
+    }
+
+    public FtpResponse<Void> makeDirectory(FTPClient ftpClient, String path) {
+
+        try {
+
+            String currentWorkingDirectory = ftpClient.printWorkingDirectory();
+
+            boolean alreadyExist = ftpClient.changeWorkingDirectory(path);
+
+            if (alreadyExist) {
+
+                ftpClient.changeWorkingDirectory(currentWorkingDirectory);
+
+                return new FtpResponse<>(
+                        false,
+                        "Un répertoire du même nom(" + path+ ") existe déjà",
+                        null
+                );
+            }
+
+            boolean success = ftpClient.makeDirectory(path);
+
+            if (!success) {
+                return new FtpResponse<>(
+                        false,
+                        ftpClient.getReplyString(),
+                        null
+                );
+            }
+
+            return  new FtpResponse<>(
+                    true,
+                    "Répertoire cré avec succès",
+                    null);
+        } catch (IOException e) {
+            return  new FtpResponse<>(
+                    false,
+                    "Erreur IO création répertoire : " + e.getMessage(),
+                    null
+            );
         }
     }
 }
