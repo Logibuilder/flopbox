@@ -160,7 +160,7 @@ public class FileController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, "Échec de suppression FTP : " + ftpResponse.message()));
             }
 
-            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.error(200, "Suppréssion réussie : " + ftpResponse.message()));
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(200,ftpResponse , "Suppréssion réussie : " + ftpResponse.message()));
         } catch (Exception e) {
             log.error("Erreur interceptée dans le contrôleur : {}", e.getMessage());
 

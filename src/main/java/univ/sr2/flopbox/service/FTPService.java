@@ -53,7 +53,7 @@ public class FTPService {
         FTPFile[] files = ftpClient.listFiles(path);
 
         return Arrays.stream(files).map(file -> new FtpItem(
-                file.getName(),
+                path + "/" + file.getName(),
                 file.isDirectory() ? "DIRECTORY" : "FILE",
                 file.getSize(),
                 file.getTimestamp() != null ? file.getTimestamp().getTime().toString() : "Inconnu"
@@ -71,15 +71,6 @@ public class FTPService {
             } catch (IOException e) {
                 System.err.println("Erreur lors de la déconnexion FTP : " + e.getMessage());
             }
-        }
-    }
-
-    public void downloadFIle(FTPClient ftpClient, String path, OutputStream outputStream) throws IOException {
-        ftpClient.enterLocalPassiveMode();
-        boolean success = ftpClient.retrieveFile(path, outputStream);
-
-        if (!success) {
-            throw new IOException("Erreur lors du téléchargement");
         }
     }
 
@@ -117,10 +108,6 @@ public class FTPService {
             log.error("Erreur d'entrée/sortie pendant le transfert FTP : {}", e.getMessage(), e);
             throw e;
         }
-    }
-
-    public void deleteFile(FTPClient ftpClient, String path, OutputStream outputStream) {
-
     }
 
     public void downloadFile(FTPClient ftpClient, String path, OutputStream outputStream) throws IOException {
@@ -241,5 +228,8 @@ public class FTPService {
                     null
             );
         }
+
+
+        //public FtpResponse<Lis>
     }
 }

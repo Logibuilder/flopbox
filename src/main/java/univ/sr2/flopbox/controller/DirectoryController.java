@@ -128,7 +128,7 @@ public class DirectoryController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, ftpResponse.message()));
             }
 
-            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.error(200, "Suppréssion réussie"));
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(200, path,"Suppréssion réussie"));
         } catch (Exception e) {
             log.error("Erreur interceptée dans le contrôleur : {}", e.getMessage());
 
