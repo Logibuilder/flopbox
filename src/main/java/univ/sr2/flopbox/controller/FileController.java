@@ -6,7 +6,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -15,9 +18,12 @@ import univ.sr2.flopbox.dto.FtpResponse;
 import univ.sr2.flopbox.dto.RenameRequest;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.service.FileService;
+import univ.sr2.flopbox.service.FtpInputStream;
 import univ.sr2.flopbox.service.ServerService;
 
+import java.awt.*;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import lombok.extern.slf4j.Slf4j;
 
@@ -35,10 +41,9 @@ public class FileController {
 
     @Operation(summary = "Télécharger un fichier", description = "Récupère un fichier depuis le serveur FTP et le télécharge (Download).")
     @GetMapping()
-    public void downloadFile(
+    public ResponseEntity<?> downloadFile(
             @PathVariable String host,
             @RequestParam String path,
-            HttpServletResponse response,
             @RequestHeader(value = "X-FTP-Username", defaultValue = "anonymous") String ftpUser,
             @RequestHeader(value = "X-FTP-Password", defaultValue = "") String ftpPassword) throws IOException {
 
@@ -51,23 +56,21 @@ public class FileController {
 
             String fileName = path.contains("/") ? path.substring(path.lastIndexOf("/") + 1) : path;
             if (fileName.isEmpty()) fileName = "downloaded_file";
-            response.setContentType("application/octet-stream");
-            response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
 
-            OutputStream outputStream = response.getOutputStream();
+            InputStream inputStream = fileService.downloadFile(ftpClient, path);
 
-            fileService.downloadFile(ftpClient, path, outputStream);
+            HttpHeaders headers = new HttpHeaders();
 
-            outputStream.flush();
+            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+            headers.setContentDispositionFormData("atachement", fileName);
+
+            return  ResponseEntity.ok().headers(headers).body(new InputStreamResource(new FtpInputStream(ftpClient, inputStream)));
+
 
         } catch (IOException e) {
-            // En cas d'erreur technique (ex: fichier introuvable sur le FTP)
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Erreur FTP : " + e.getMessage());
-        } finally {
-            // 6. Toujours se déconnecter proprement
-            if (ftpClient != null) {
-                serverService.disconnect(ftpClient);
-            }
+            log.error("Erreur lors du téléchargement depuis {} : {}", host, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error(404, e.getMessage()));
         }
     }
 

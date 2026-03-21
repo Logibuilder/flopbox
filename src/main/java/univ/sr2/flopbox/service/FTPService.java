@@ -60,10 +60,7 @@ public class FTPService {
     public List<FtpItem> listDirectory(FTPClient ftpClient, String path) throws IOException {
         ftpClient.enterLocalPassiveMode();
 
-        // Astuce : Si le chemin est "/", on envoie "" pour lister le dossier courant par défaut
-        String ftpPath = path.equals("/") ? "" : path;
-
-        FTPFile[] files = ftpClient.listFiles(ftpPath);
+        FTPFile[] files = ftpClient.listFiles(path);
 
         // Sécurité anti-crash au cas où le serveur refuse de lister le dossier
         if (files == null) {
@@ -136,17 +133,20 @@ public class FTPService {
         }
     }
 
-    public void downloadFile(FTPClient ftpClient, String path, OutputStream outputStream) throws IOException {
+    public InputStream downloadFile(FTPClient ftpClient, String path) throws IOException {
 
         ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
 
         ftpClient.enterLocalPassiveMode();
 
-        boolean success = ftpClient.retrieveFile(path, outputStream);
-
-        if (!success) {
-            throw new IOException("Erreur lors du téléchargement du fichier : " + path);
+        InputStream inputStream =   ftpClient.retrieveFileStream(path);
+        if (inputStream == null) {
+            String replyCode = String.valueOf(ftpClient.getReplyCode());
+            String replyMessage = ftpClient.getReplyString().trim();
+            throw new IOException("Erreur FTP " + replyCode + " : " + replyMessage);
         }
+
+        return inputStream;
     }
 
     public FtpResponse<Void> rename(FTPClient ftpClient, String oldName, String newName) throws IOException {

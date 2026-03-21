@@ -24,8 +24,8 @@ public class  FileService {
     @Autowired
     FTPService ftpService;
 
-    public void downloadFile(FTPClient ftpClient, String path, OutputStream outputStream) throws IOException {
-        ftpService.downloadFile(ftpClient, path, outputStream);
+    public InputStream downloadFile(FTPClient ftpClient, String path) throws IOException {
+        return ftpService.downloadFile(ftpClient, path);
     }
 
     public void uploadFile(FTPClient ftpClient, String path, InputStream inputStream, boolean replace) throws IOException {
