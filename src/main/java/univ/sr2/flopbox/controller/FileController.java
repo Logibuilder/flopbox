@@ -1,5 +1,7 @@
 package univ.sr2.flopbox.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @RestController
+@Tag(name = "Fichiers", description = "API de manipulation des fichiers sur un serveur FTP distant (Upload, Download, Renommer, Supprimer)")
 @RequestMapping("api/v1/servers/{host}/files")
 public class FileController {
 
@@ -30,7 +33,7 @@ public class FileController {
     ServerService serverService;
 
 
-
+    @Operation(summary = "Télécharger un fichier", description = "Récupère un fichier depuis le serveur FTP et le télécharge (Download).")
     @GetMapping()
     public void downloadFile(
             @PathVariable String host,
@@ -67,6 +70,9 @@ public class FileController {
             }
         }
     }
+
+
+    @Operation(summary = "Envoyer un fichier", description = "Envoie un fichier local vers le serveur FTP distant (Upload). Écrase le fichier s'il existe déjà.")
     @PostMapping
     public void uploadFile(
             @PathVariable String host,
@@ -98,7 +104,7 @@ public class FileController {
         }
 
     }
-
+    @Operation(summary = "Renommer un fichier", description = "Modifie le nom d'un fichier existant sur le serveur FTP.")
     @PatchMapping()
     public ResponseEntity<ApiResponse<FtpResponse<Void>>>  rename(
             @PathVariable String host,
@@ -139,7 +145,7 @@ public class FileController {
             }
         }
     }
-
+    @Operation(summary = "Supprimer un fichier", description = "Supprime définitivement un fichier sur le serveur FTP.")
     @DeleteMapping()
     public ResponseEntity<ApiResponse<FtpResponse<Void>>> deleteFile(
             @PathVariable String host,

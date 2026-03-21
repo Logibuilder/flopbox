@@ -6,6 +6,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+
+/**
+ * Entité JPA représentant un serveur FTP stocké dans la base de données relationnelle.
+ * Contient les informations de connexion de base (hôte, port, et un alias d'affichage).
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -1,6 +1,8 @@
 package univ.sr2.flopbox.controller;
 
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("api/v1/servers")
+@Tag(name = "Gestion des Serveurs", description = "Endpoints pour ajouter, lister, modifier et rechercher sur les serveurs FTP")
 public class ServerController {
 
 
@@ -23,7 +26,7 @@ public class ServerController {
     private ServerService serverService;
 
 
-
+    @Operation(summary = "Ajouter un serveur", description = "Enregistre un nouveau serveur FTP dans la base de données de Flopbox.")
     @PostMapping()
     public ResponseEntity<ApiResponse<ServerRequest>> addServer(@RequestBody ServerRequest serverRequest) {
 
@@ -37,7 +40,7 @@ public class ServerController {
                     .body(ApiResponse.error(400, e.getMessage()));
         }
     }
-
+    @Operation(summary = "Lister les serveurs", description = "Récupère la liste de tous les serveurs FTP enregistrés.")
     @GetMapping()
     public ResponseEntity<ApiResponse<List<ServerRequest>>> getServeur() {
         List<ServerRequest> responseDto =  serverService.getServer().stream().map(ServerRequest::toRequest).toList();
@@ -77,7 +80,7 @@ public class ServerController {
                     .body(ApiResponse.error(404, e.getMessage()));
         }
     }
-
+    @Operation(summary = "Recherche sur un serveur", description = "Effectue une recherche récursive de fichiers sur un serveur FTP spécifique.")
     @GetMapping("/{host}/search")
     public ResponseEntity<ApiResponse<List<SearchResponse>>>  searchFile(
             @PathVariable("host") String host,
@@ -105,7 +108,7 @@ public class ServerController {
             }
         }
     }
-
+    @Operation(summary = "Recherche globale ciblée", description = "Cherche un fichier spécifique sur une liste de serveurs fournis dans le corps de la requête.")
     @GetMapping("/search")
     public ResponseEntity<ApiResponse<List<SearchResponse>>> searchGlobal(
             @RequestBody GlobalSearchRequest globalSearchRequest) {

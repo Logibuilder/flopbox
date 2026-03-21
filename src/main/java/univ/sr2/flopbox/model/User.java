@@ -4,6 +4,10 @@ package univ.sr2.flopbox.model;
 import jakarta.persistence.*;
 import lombok.Data;
 
+
+/**
+ * Entité JPA représentant un utilisateur de l'application Flopbox.
+ */
 @Data
 @Entity
 @Table(name = "users")

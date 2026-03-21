@@ -1,5 +1,12 @@
 package univ.sr2.flopbox.dto;
 
+/**
+ * Enveloppe générique pour uniformiser toutes les réponses de l'API REST.
+ * Garantit que le client (Front-end) recevra toujours un JSON avec la même structure
+ * (un code, un message, et éventuellement des données).
+ *
+ * @param <T> Le type de donnée encapsulée (Liste, Objet, String, etc.)
+ */
 public record ApiResponse<T>(
         int code,
         String message,

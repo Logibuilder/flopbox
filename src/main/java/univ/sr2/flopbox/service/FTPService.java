@@ -48,6 +48,15 @@ public class FTPService {
         return ftpClient;
     }
 
+    /**
+     * Liste le contenu d'un répertoire donné sur le serveur FTP distant.
+     * Ignore intelligemment les répertoires virtuels de navigation (ex: "." et "..") si nécessaire.
+     *
+     * @param ftpClient Le client FTP connecté.
+     * @param path Le chemin absolu ou relatif du répertoire à lister.
+     * @return Une liste d'objets FtpItem représentant les fichiers et dossiers trouvés.
+     * @throws IOException En cas d'erreur de communication avec le serveur FTP.
+     */
     public List<FtpItem> listDirectory(FTPClient ftpClient, String path) throws IOException {
         ftpClient.enterLocalPassiveMode();
 
@@ -253,7 +262,18 @@ public class FTPService {
         return resultats;
     }
 
-
+    /**
+     * Parcourt l'arborescence du serveur FTP de manière récursive pour trouver des fichiers.
+     * S'arrête automatiquement si la profondeur maximale est atteinte ou si suffisamment de
+     * fichiers ont été trouvés pour éviter de surcharger la mémoire.
+     *
+     * @param ftpClient Le client FTP connecté au serveur.
+     * @param currentPath Le chemin du répertoire actuellement inspecté.
+     * @param searchQuery Le mot-clé à rechercher dans le nom des fichiers.
+     * @param res La liste accumulant les résultats trouvés (passée par référence).
+     * @param currentDepth La profondeur actuelle dans l'arborescence (0 pour la racine).
+     * @throws IOException Si la lecture d'un dossier échoue (ex: droits insuffisants).
+     */
     public void seachFile(FTPClient ftpClient,String currentPath, String searchQuery, List<FtpItem> res, int currentDepth) throws IOException {
 
 

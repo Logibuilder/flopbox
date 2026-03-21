@@ -3,6 +3,12 @@ package univ.sr2.flopbox.dto;
 
 import univ.sr2.flopbox.model.Server;
 
+
+/**
+ * DTO utilisé pour la création, la modification et l'affichage des informations d'un serveur.
+ * Permet de masquer l'ID interne de la base de données au client et propose
+ * des méthodes utilitaires pour la conversion de/vers l'entité JPA.
+ */
 public record ServerRequest(
         String alias,
         String host,

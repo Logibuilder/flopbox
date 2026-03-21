@@ -1,9 +1,10 @@
 package univ.sr2.flopbox.dto;
 
-import univ.sr2.flopbox.model.Server;
-
-import java.util.Map;
-
+/**
+ * Représente un résultat de recherche globale.
+ * Associe le fichier ou dossier trouvé (FtpItem) avec les informations
+ * du serveur (ServerRequest) sur lequel il réside.
+ */
 public record SearchResponse(
         FtpItem ftpItem,
         ServerRequest serverRequest

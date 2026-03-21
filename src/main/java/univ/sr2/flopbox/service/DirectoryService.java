@@ -10,6 +10,12 @@ import univ.sr2.flopbox.dto.FtpResponse;
 import java.io.IOException;
 import java.util.List;
 
+
+
+/**
+ * Service métier dédié aux opérations sur les répertoires (création, suppression, listage).
+ * Agit comme une façade simplifiée au-dessus de FTPService pour le contrôleur DirectoryController.
+ */
 @Slf4j
 @Service
 public class DirectoryService {

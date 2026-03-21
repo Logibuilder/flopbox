@@ -100,7 +100,17 @@ public class ServerService {
         return  ftpService.seachFile(ftpClient, searchQuery);
     }
 
-    public List<SearchResponse> searchGlobal(String seaachQuery, Map<String, ServerCredentials> credentials) throws IOException {
+    /**
+     * Effectue une recherche globale sur une sélection de serveurs FTP.
+     * Cette méthode se connecte à chaque serveur fourni dans la requête,
+     * y effectue une recherche récursive, puis fusionne les résultats.
+     *
+     * @param searchQuery Le nom (ou morceau de nom) du fichier/dossier recherché.
+     * @param credentials Une Map contenant les identifiants pour chaque serveur ciblé (clé: host).
+     * @return Une liste d'objets SearchResponse liant chaque fichier trouvé à son serveur d'origine.
+     * @throws IOException En cas de problème critique réseau (rarement levé car attrapé dans la boucle).
+     */
+    public List<SearchResponse> searchGlobal(String searchQuery, Map<String, ServerCredentials> credentials) throws IOException {
 
         List<SearchResponse> resGlobal = new ArrayList<SearchResponse>();
 
@@ -120,7 +130,7 @@ public class ServerService {
 
                 ftpClient = this.connect(server, creds.username(), creds.password());
 
-                List<FtpItem> res = searchFile(ftpClient, seaachQuery);
+                List<FtpItem> res = searchFile(ftpClient, searchQuery);
 
                 resGlobal.addAll(
                         res.stream()

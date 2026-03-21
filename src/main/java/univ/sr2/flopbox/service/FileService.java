@@ -11,6 +11,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+
+/**
+ * Service métier dédié aux opérations spécifiques sur les fichiers (upload, download, suppression, renommage).
+ * Agit comme une façade simplifiée au-dessus de FTPService pour le contrôleur FileController.
+ */
 @NoArgsConstructor
 @AllArgsConstructor
 @Service

@@ -1,6 +1,7 @@
 package univ.sr2.flopbox.controller;
 
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,7 @@ public class DirectoryController {
     @Autowired
     ServerService serverService;
 
+    @Operation(summary = "Lister le contenu d'un dossier", description = "Récupère la liste des fichiers et sous-dossiers contenus dans un chemin donné.")
     @GetMapping()
     public ResponseEntity<ApiResponse<List<FtpItem>>> listDirectory(
             @PathVariable("host") String host,
@@ -69,7 +71,7 @@ public class DirectoryController {
             serverService.disconnect(ftpClient);
         }
     }
-
+    @Operation(summary = "Créer un dossier", description = "Crée un nouveau répertoire sur le serveur FTP.")
     @PostMapping()
     public ResponseEntity<ApiResponse<String>> makeDirectory(
             @PathVariable("host") String host,
@@ -108,6 +110,7 @@ public class DirectoryController {
 
     }
 
+    @Operation(summary = "Supprimer un dossier", description = "Supprime un répertoire existant sur le serveur FTP.")
     @DeleteMapping()
     public ResponseEntity<ApiResponse<String>> deleteDirectory(
             @PathVariable String host,

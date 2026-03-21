@@ -1,6 +1,9 @@
 package univ.sr2.flopbox.dto;
 
-
+/**
+ * Représente un élément (fichier ou dossier) trouvé sur un serveur FTP.
+ * Contient les métadonnées essentielles renvoyées au client.
+ */
 public record FtpItem(
         String path,
         String name,
