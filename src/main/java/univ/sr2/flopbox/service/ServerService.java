@@ -2,17 +2,20 @@ package univ.sr2.flopbox.service;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.net.ftp.FTPClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import univ.sr2.flopbox.dto.DeleteServerRequest;
-import univ.sr2.flopbox.dto.FtpItem;
-import univ.sr2.flopbox.dto.ServerRequest;
+import univ.sr2.flopbox.dto.*;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.repository.ServerRepository;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+
+@Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
 @Service
@@ -95,5 +98,51 @@ public class ServerService {
 
     public List<FtpItem> searchFile(FTPClient ftpClient, String searchQuery) throws IOException {
         return  ftpService.seachFile(ftpClient, searchQuery);
+    }
+
+    public List<SearchResponse> searchGlobal(String seaachQuery, Map<String, ServerCredentials> credentials) throws IOException {
+
+        List<SearchResponse> resGlobal = new ArrayList<SearchResponse>();
+
+        if (credentials == null || credentials.isEmpty()) {
+            return resGlobal;
+        }
+
+
+        for (ServerCredentials creds :  credentials.values()) {
+
+            FTPClient ftpClient = null;
+
+            try {
+
+                Server server = serverRepository.findByHost(creds.host())
+                        .orElseThrow(() -> new RuntimeException("Le serveur " + creds.host() + " n'est pas enregistré dans Flopbox."));
+
+                ftpClient = this.connect(server, creds.username(), creds.password());
+
+                List<FtpItem> res = searchFile(ftpClient, seaachQuery);
+
+                resGlobal.addAll(
+                        res.stream()
+                                .map(
+                                        ftpItem -> new SearchResponse(
+                                                ftpItem
+                                                , ServerRequest.toRequest(server)
+                                        ))
+                                .toList()
+                );
+
+            } catch (Exception e) {
+            // Si CE serveur précis plante (mauvais mdp, hors-ligne...), on l'ignore et on passe au suivant
+                log.warn("Impossible de charcher dans le serveur {} : {}", creds.host(), e.getMessage());
+            } finally {
+                // déconnecter
+                if (ftpClient != null) {
+                    this.disconnect(ftpClient);
+                }
+            }
+        }
+
+        return resGlobal;
     }
 }

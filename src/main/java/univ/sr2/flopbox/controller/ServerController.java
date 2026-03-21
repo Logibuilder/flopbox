@@ -105,4 +105,20 @@ public class ServerController {
             }
         }
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResponse<List<SearchResponse>>> searchGlobal(
+            @RequestBody GlobalSearchRequest globalSearchRequest) {
+        try {
+
+            List<SearchResponse> allRes = serverService.searchGlobal(globalSearchRequest.searchQuery(), globalSearchRequest.credentials());
+
+            return ResponseEntity.status(HttpStatus.OK)
+                    .body(ApiResponse.success(200, allRes, "Recherche globale effectuée avec succès"));
+        } catch(Exception e) {
+            log.error("Erreur critique lors de la recherche globale : {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, "Erreur serveur : " + e.getMessage()));
+        }
+    }
  }
