@@ -1,39 +1,39 @@
 openapi: 3.0.3
 info:
   title: API FlopBox
-  description: Plate-forme proxy FlopBox pour centraliser la gestion de fichiers distants stockés dans des serveurs FTP tiers.
+  description: Plate-forme proxy FlopBox pour centraliser la gestion de fichiers distants via FTP.
   version: 1.0.0
 
 servers:
   - url: http://localhost:8080
     description: Serveur local
 
-# Définition des paramètres réutilisables (pour ne pas répéter le code)
 components:
   securitySchemes:
+    # Pour l'instant SecurityConfig autorise tout, mais on définit le schéma ici
     basicAuth:
       type: http
       scheme: basic
+
   parameters:
-    serverId:
-      name: ID
+    serverHost:
+      name: host
       in: path
       required: true
-      description: Identifiant unique du serveur
+      description: Nom d'hôte du serveur FTP (ex: ftp.free.fr)
       schema:
-        type: integer
+        type: string
     ftpUsername:
       name: X-FTP-Username
       in: header
-      required: true
-      description: Nom d'utilisateur pour la connexion FTP distante
+      required: false
       schema:
         type: string
+        default: anonymous
     ftpPassword:
       name: X-FTP-Password
       in: header
-      required: true
-      description: Mot de passe pour la connexion FTP distante
+      required: false
       schema:
         type: string
         format: password
@@ -41,174 +41,119 @@ components:
       name: path
       in: query
       required: true
-      description: Chemin du fichier ou répertoire sur le serveur FTP
+      description: Chemin complet vers le fichier ou répertoire
       schema:
         type: string
 
-# Sécurité par défaut sur toute l'API (Authentification de l'utilisateur FlopBox)
-security:
-  - basicAuth: []
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+        data:
+          type: object
 
 paths:
-  /api/server/:
+  # --- GESTION DES SERVEURS ---
+  /api/v1/servers:
     post:
-      summary: Ajouter un nouveau serveur FTP
-      tags:
-        - Serveurs
+      summary: Ajouter un serveur
+      tags: [Gestion des Serveurs]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                alias:
-                  type: string
-                  example: "MonServeur"
-                host:
-                  type: string
-                  example: "ftp.example.com"
-                port:
-                  type: integer
-                  example: 21
+              $ref: '#/components/schemas/ServerRequest'
       responses:
         '201':
-          description: Serveur créé avec succès
-
+          description: Serveur créé
     get:
-      summary: Récupérer la liste de tous les serveurs FTP enregistrés
-      tags:
-        - Serveurs
+      summary: Lister les serveurs
+      tags: [Gestion des Serveurs]
       responses:
         '200':
-          description: Liste des serveurs
+          description: Liste des serveurs récupérée
 
-  /api/server/{ID}:
-    get:
-      summary: Récupérer la configuration d'un serveur spécifique
-      tags:
-        - Serveurs
+  /api/v1/servers/{host}:
+    put:
+      summary: Mettre à jour un serveur
+      tags: [Gestion des Serveurs]
       parameters:
-        - $ref: '#/components/parameters/serverId'
+        - $ref: '#/components/parameters/serverHost'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerRequest'
       responses:
         '200':
-          description: Configuration du serveur
-        '404':
-          description: Serveur inconnu
+          description: Serveur mis à jour
 
-  /api/server/{ID}/directory:
+  # --- GESTION DES RÉPERTOIRES ---
+  /api/v1/servers/{host}/directories:
     get:
-      summary: Afficher l'arborescence d'un répertoire
-      tags:
-        - Répertoires
+      summary: Lister le contenu d'un dossier
+      tags: [Répertoires]
       parameters:
-        - $ref: '#/components/parameters/serverId'
+        - $ref: '#/components/parameters/serverHost'
         - $ref: '#/components/parameters/filePath'
         - $ref: '#/components/parameters/ftpUsername'
         - $ref: '#/components/parameters/ftpPassword'
       responses:
         '200':
-          description: Contenu du répertoire
-        '401':
-          description: Erreur d'authentification FTP
-        '403':
-          description: Accès refusé
-        '404':
-          description: Serveur ou chemin inconnu
+          description: Liste des fichiers récupérée
 
     post:
-      summary: Créer un nouveau répertoire
-      tags:
-        - Répertoires
+      summary: Créer un dossier
+      tags: [Répertoires]
       parameters:
-        - $ref: '#/components/parameters/serverId'
+        - $ref: '#/components/parameters/serverHost'
         - $ref: '#/components/parameters/filePath'
         - $ref: '#/components/parameters/ftpUsername'
         - $ref: '#/components/parameters/ftpPassword'
       responses:
         '201':
           description: Répertoire créé
-        '400':
-          description: Le répertoire existe déjà ou erreur de création
-
-    put:
-      summary: Renommer un répertoire
-      tags:
-        - Répertoires
-      parameters:
-        - $ref: '#/components/parameters/serverId'
-        - $ref: '#/components/parameters/filePath'
-        - $ref: '#/components/parameters/ftpUsername'
-        - $ref: '#/components/parameters/ftpPassword'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                newName:
-                  type: string
-                  example: "nouveau_nom"
-      responses:
-        '200':
-          description: Répertoire renommé avec succès
-        '400':
-          description: Impossible de renommer
-        '404':
-          description: Répertoire introuvable
 
     delete:
-      summary: Supprimer un répertoire
-      tags:
-        - Répertoires
+      summary: Supprimer un dossier
+      tags: [Répertoires]
       parameters:
-        - $ref: '#/components/parameters/serverId'
+        - $ref: '#/components/parameters/serverHost'
         - $ref: '#/components/parameters/filePath'
-        - $ref: '#/components/parameters/ftpUsername'
-        - $ref: '#/components/parameters/ftpPassword'
-      responses:
-        '204':
-          description: Répertoire supprimé avec succès
-        '404':
-          description: Répertoire introuvable
-
-  /api/server/{ID}/file:
-    get:
-      summary: Télécharger un fichier depuis le FTP
-      tags:
-        - Fichiers
-      parameters:
-        - $ref: '#/components/parameters/serverId'
-        - $ref: '#/components/parameters/filePath'
-        - $ref: '#/components/parameters/ftpUsername'
-        - $ref: '#/components/parameters/ftpPassword'
       responses:
         '200':
-          description: Fichier trouvé et renvoyé
+          description: Dossier supprimé
+
+  # --- GESTION DES FICHIERS ---
+  /api/v1/servers/{host}/files:
+    get:
+      summary: Télécharger un fichier
+      tags: [Fichiers]
+      parameters:
+        - $ref: '#/components/parameters/serverHost'
+        - $ref: '#/components/parameters/filePath'
+      responses:
+        '200':
+          description: Flux binaire du fichier
           content:
             application/octet-stream:
               schema:
                 type: string
                 format: binary
-        '404':
-          description: Fichier introuvable
 
     post:
-      summary: Téléverser (upload) un nouveau fichier
-      tags:
-        - Fichiers
+      summary: Envoyer un fichier (Upload)
+      tags: [Fichiers]
       parameters:
-        - $ref: '#/components/parameters/serverId'
-        - name: chemin_cible
-          in: query
-          required: true
-          schema:
-            type: string
-        - $ref: '#/components/parameters/ftpUsername'
-        - $ref: '#/components/parameters/ftpPassword'
+        - $ref: '#/components/parameters/serverHost'
+        - $ref: '#/components/parameters/filePath'
       requestBody:
-        required: true
         content:
           multipart/form-data:
             schema:
@@ -219,65 +164,39 @@ paths:
                   format: binary
       responses:
         '201':
-          description: Fichier téléversé avec succès
-        '400':
-          description: Fichier invalide ou erreur d'upload
+          description: Upload réussi
 
-    put:
+    patch:
       summary: Renommer un fichier
-      tags:
-        - Fichiers
+      tags: [Fichiers]
       parameters:
-        - $ref: '#/components/parameters/serverId'
-        - $ref: '#/components/parameters/filePath'
-        - $ref: '#/components/parameters/ftpUsername'
-        - $ref: '#/components/parameters/ftpPassword'
+        - $ref: '#/components/parameters/serverHost'
       requestBody:
-        required: true
         content:
           application/json:
             schema:
               type: object
               properties:
+                oldName:
+                  type: string
                 newName:
                   type: string
-                  example: "nouveau_nom"
       responses:
         '200':
-          description: Fichier renommé avec succès
-        '404':
-          description: Fichier introuvable
+          description: Renommage réussi
 
-    delete:
-      summary: Supprimer un fichier
-      tags:
-        - Fichiers
-      parameters:
-        - $ref: '#/components/parameters/serverId'
-        - $ref: '#/components/parameters/filePath'
-        - $ref: '#/components/parameters/ftpUsername'
-        - $ref: '#/components/parameters/ftpPassword'
-      responses:
-        '204':
-          description: Fichier supprimé avec succès
-        '404':
-          description: Fichier introuvable
-
-  /api/server/{ID}/search:
+  # --- RECHERCHE ---
+  /api/v1/servers/{host}/search:
     get:
-      summary: Chercher un fichier/répertoire
-      tags:
-        - Recherche
+      summary: Recherche sur un serveur spécifique
+      tags: [Gestion des Serveurs]
       parameters:
-        - $ref: '#/components/parameters/serverId'
-        - name: query
+        - $ref: '#/components/parameters/serverHost'
+        - name: searchQuery
           in: query
           required: true
-          description: Mot-clé pour la recherche
           schema:
             type: string
       responses:
         '200':
-          description: Recherche aboutie
-        '400':
-          description: Requête invalide
+          description: Résultats de recherche

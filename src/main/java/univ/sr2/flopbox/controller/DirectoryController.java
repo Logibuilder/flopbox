@@ -2,6 +2,7 @@ package univ.sr2.flopbox.controller;
 
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,8 @@ import univ.sr2.flopbox.utils.FtpHttpStatusAdaptator;
 import java.io.IOException;
 import java.util.List;
 
+
+@Tag(name = "Répertoires", description = "API de gestion des dossiers sur les serveurs FTP (Lister, Créer, Supprimer)")
 @Slf4j
 @NoArgsConstructor
 @AllArgsConstructor
