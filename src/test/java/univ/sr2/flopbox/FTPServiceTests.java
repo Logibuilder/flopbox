@@ -110,28 +110,33 @@ class FTPServiceTest {
     // uploadFile
     // ─────────────────────────────────────────────
 
+
     @Test
-    @DisplayName("uploadFile — upload réussi")
+    @DisplayName("uploadFile — upload réussi retourne FtpResponse succès")
     void uploadFile_succes() throws IOException {
         InputStream inputStream = new ByteArrayInputStream("contenu".getBytes());
-        when(ftpClient.listNames(anyString())).thenReturn(null); // fichier n'existe pas
+        when(ftpClient.listNames(anyString())).thenReturn(null);
         when(ftpClient.storeFile(anyString(), any(InputStream.class))).thenReturn(true);
+        when(ftpClient.getReplyCode()).thenReturn(226);
 
-        assertThatCode(() -> ftpService.uploadFile(ftpClient, "/test.txt", inputStream, false))
-                .doesNotThrowAnyException();
+        FtpResponse<Void> response = ftpService.uploadFile(ftpClient, "/test.txt", inputStream, false);
 
+        assertThat(response.succes()).isTrue();
+        assertThat(response.code()).isEqualTo(226);
         verify(ftpClient).storeFile(eq("/test.txt"), any(InputStream.class));
     }
 
     @Test
-    @DisplayName("uploadFile — échoue si fichier existe et replace=false")
+    @DisplayName("uploadFile — retourne FtpResponse échec si fichier existe et replace=false")
     void uploadFile_echec_si_fichier_existe_sans_replace() throws IOException {
         InputStream inputStream = new ByteArrayInputStream("contenu".getBytes());
         when(ftpClient.listNames(anyString())).thenReturn(new String[]{"/test.txt"});
 
-        assertThatThrownBy(() -> ftpService.uploadFile(ftpClient, "/test.txt", inputStream, false))
-                .isInstanceOf(IOException.class)
-                .hasMessageContaining("remplacement n'est pas autorisé");
+        FtpResponse<Void> response = ftpService.uploadFile(ftpClient, "/test.txt", inputStream, false);
+
+        assertThat(response.succes()).isFalse();
+        assertThat(response.code()).isEqualTo(450);
+        assertThat(response.message()).contains("remplacement n'est pas autorisé");
     }
 
     @Test
@@ -140,22 +145,27 @@ class FTPServiceTest {
         InputStream inputStream = new ByteArrayInputStream("contenu".getBytes());
         when(ftpClient.listNames(anyString())).thenReturn(new String[]{"/test.txt"});
         when(ftpClient.storeFile(anyString(), any(InputStream.class))).thenReturn(true);
+        when(ftpClient.getReplyCode()).thenReturn(226);
 
-        assertThatCode(() -> ftpService.uploadFile(ftpClient, "/test.txt", inputStream, true))
-                .doesNotThrowAnyException();
+        FtpResponse<Void> response = ftpService.uploadFile(ftpClient, "/test.txt", inputStream, true);
+
+        assertThat(response.succes()).isTrue();
     }
 
     @Test
-    @DisplayName("uploadFile — lève une exception si storeFile retourne false")
+    @DisplayName("uploadFile — retourne FtpResponse échec si storeFile retourne false")
     void uploadFile_leve_exception_si_echec_ftp() throws IOException {
         InputStream inputStream = new ByteArrayInputStream("contenu".getBytes());
         when(ftpClient.listNames(anyString())).thenReturn(null);
         when(ftpClient.storeFile(anyString(), any(InputStream.class))).thenReturn(false);
+        when(ftpClient.getReplyCode()).thenReturn(550);
         when(ftpClient.getReplyString()).thenReturn("550 Permission denied");
 
-        assertThatThrownBy(() -> ftpService.uploadFile(ftpClient, "/test.txt", inputStream, false))
-                .isInstanceOf(IOException.class)
-                .hasMessageContaining("Échec de l'upload");
+        FtpResponse<Void> response = ftpService.uploadFile(ftpClient, "/test.txt", inputStream, false);
+
+        assertThat(response.succes()).isFalse();
+        assertThat(response.code()).isEqualTo(550);
+        assertThat(response.message()).contains("Échec de l'upload");
     }
 
     // ─────────────────────────────────────────────
@@ -163,22 +173,29 @@ class FTPServiceTest {
     // ─────────────────────────────────────────────
 
     @Test
-    @DisplayName("downloadFile — téléchargement réussi")
+    @DisplayName("downloadFile — retourne un InputStream si le fichier existe")
     void downloadFile_succes() throws IOException {
-        when(ftpClient.retrieveFile(anyString(), any())).thenReturn(true);
+        InputStream fakeStream = new ByteArrayInputStream("contenu".getBytes());
+        // retrieveFileStream() et non retrieveFile()
+        when(ftpClient.retrieveFileStream(anyString())).thenReturn(fakeStream);
 
-        assertThatCode(() -> ftpService.downloadFile(ftpClient, "/test.txt"))
-                .doesNotThrowAnyException();
+        InputStream result = ftpService.downloadFile(ftpClient, "/test.txt");
+
+        assertThat(result).isNotNull();
+        verify(ftpClient).retrieveFileStream("/test.txt");
     }
 
     @Test
-    @DisplayName("downloadFile — lève une exception si le fichier est introuvable")
+    @DisplayName("downloadFile — lève une IOException si le fichier est introuvable (stream null)")
     void downloadFile_echec_introuvable() throws IOException {
-        when(ftpClient.retrieveFile(anyString(), any())).thenReturn(false);
+        // retrieveFileStream() retourne null si le fichier est introuvable
+        when(ftpClient.retrieveFileStream(anyString())).thenReturn(null);
+        when(ftpClient.getReplyCode()).thenReturn(550);
+        when(ftpClient.getReplyString()).thenReturn("550 No such file or directory");
 
         assertThatThrownBy(() -> ftpService.downloadFile(ftpClient, "/inexistant.txt"))
                 .isInstanceOf(IOException.class)
-                .hasMessageContaining("Erreur lors du téléchargement");
+                .hasMessageContaining("550");
     }
 
     // ─────────────────────────────────────────────

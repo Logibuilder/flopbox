@@ -6,6 +6,7 @@ import univ.sr2.flopbox.model.Server;
 
 import java.util.Optional;
 
+
 @Repository
 public interface ServerRepository extends JpaRepository<Server, Integer> {
     Optional<Server> findByHost(String host);

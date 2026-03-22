@@ -4,6 +4,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.repository.ServerRepository;
 
@@ -16,6 +18,7 @@ public class FlopboxApplication {
 
 	// Cette méthode s'exécute automatiquement au lancement de l'application
 	@Bean
+	@Profile("!test")
 	CommandLineRunner initDatabase(ServerRepository serverRepository) {
 		return args -> {
 			// On vérifie d'abord que la table est vide pour ne pas les recréer à chaque redémarrage
