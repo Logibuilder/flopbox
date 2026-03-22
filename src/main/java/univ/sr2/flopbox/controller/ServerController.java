@@ -13,7 +13,6 @@ import univ.sr2.flopbox.dto.*;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.service.ServerService;
 
-import java.io.IOException;
 import java.util.List;
 @Slf4j
 @RestController
@@ -48,7 +47,7 @@ public class ServerController {
         return ResponseEntity.status(HttpStatus.OK)
                 .body(ApiResponse.success(200, responseDto, "Liste des serveurs recupérée avec succés"));
     }
-
+    @Operation(summary = "Supprimer un serveur", description = "Supprime un serveur de la base de données à partir de son nom d'hôte.")
     @DeleteMapping
     public ResponseEntity<ApiResponse<ServerRequest>> deleteServer(@RequestBody DeleteServerRequest deleteServerRequest) {
 
@@ -61,7 +60,7 @@ public class ServerController {
                     .body(ApiResponse.error(404, e.getMessage()));
         }
     }
-
+    @Operation(summary = "Mettre à jour un serveur", description = "Modifie les informations (alias, port, hôte) d'un serveur existant.")
     @PutMapping("/{host}")
     public ResponseEntity<ApiResponse<ServerRequest>> updateServer(
             @PathVariable String host,
@@ -109,7 +108,7 @@ public class ServerController {
         }
     }
     @Operation(summary = "Recherche globale ciblée", description = "Cherche un fichier spécifique sur une liste de serveurs fournis dans le corps de la requête.")
-    @GetMapping("/search")
+    @PostMapping("/search")
     public ResponseEntity<ApiResponse<List<SearchResponse>>> searchGlobal(
             @RequestBody GlobalSearchRequest globalSearchRequest) {
         try {
