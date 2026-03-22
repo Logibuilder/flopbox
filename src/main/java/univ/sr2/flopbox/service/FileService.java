@@ -28,8 +28,8 @@ public class  FileService {
         return ftpService.downloadFile(ftpClient, path);
     }
 
-    public void uploadFile(FTPClient ftpClient, String path, InputStream inputStream, boolean replace) throws IOException {
-        ftpService.uploadFile(ftpClient, path, inputStream, replace);
+    public FtpResponse<Void> uploadFile(FTPClient ftpClient, String path, InputStream inputStream, boolean replace) throws IOException {
+        return ftpService.uploadFile(ftpClient, path, inputStream, replace);
     }
 
     public FtpResponse<Void> delete(FTPClient ftpClient, String path) throws IOException {

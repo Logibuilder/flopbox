@@ -24,8 +24,8 @@ import univ.sr2.flopbox.service.ServerService;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import lombok.extern.slf4j.Slf4j;
+import univ.sr2.flopbox.utils.FtpHttpStatusAdaptator;
 
 @Slf4j
 @RestController
@@ -50,7 +50,6 @@ public class FileController {
         Server server = serverService.getServerByHost(host);
 
         FTPClient ftpClient = null;
-
         try {
             ftpClient = serverService.connect(server, ftpUser, ftpPassword);
 
@@ -62,12 +61,16 @@ public class FileController {
             HttpHeaders headers = new HttpHeaders();
 
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            headers.setContentDispositionFormData("atachement", fileName);
+            headers.setContentDispositionFormData("attachement", fileName);
 
             return  ResponseEntity.ok().headers(headers).body(new InputStreamResource(new FtpInputStream(ftpClient, inputStream)));
 
 
         } catch (IOException e) {
+            if (ftpClient != null) {
+                serverService.disconnect(ftpClient);
+                log.debug("Déconnexion de secours effectuée suite à une erreur de téléchargement.");
+            }
             log.error("Erreur lors du téléchargement depuis {} : {}", host, e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error(404, e.getMessage()));
@@ -77,36 +80,47 @@ public class FileController {
 
     @Operation(summary = "Envoyer un fichier", description = "Envoie un fichier local vers le serveur FTP distant (Upload). Écrase le fichier s'il existe déjà.")
     @PostMapping
-    public void uploadFile(
+    public ResponseEntity<ApiResponse<String>> uploadFile(
             @PathVariable String host,
             @RequestParam String path,
             @RequestParam("file") MultipartFile file,
-            HttpServletResponse response,
             @RequestHeader(value = "X-FTP-Username", defaultValue = "anonymous") String ftpUser,
-            @RequestHeader(value = "X-FTP-Password", defaultValue = "") String ftpPassword) throws IOException {
+            @RequestHeader(value = "X-FTP-Password", defaultValue = "") String ftpPassword) {
 
         Server server = serverService.getServerByHost(host);
         FTPClient ftpClient = null;
 
         try {
             ftpClient = serverService.connect(server, ftpUser, ftpPassword);
-            fileService.uploadFile(ftpClient, path, file.getInputStream(), true);
 
+            FtpResponse<Void> ftpResponse = fileService.uploadFile(ftpClient, path, file.getInputStream(), true);
+
+            HttpStatus httpStatus = FtpHttpStatusAdaptator.mapFtpCodeToHttpStatus(ftpResponse.code());
+
+            if (!ftpResponse.succes()) {
+                return ResponseEntity.status(httpStatus)
+                        .body(ApiResponse.error(httpStatus.value(), "Échec de l'upload FTP : " + ftpResponse.message()));
+            }
             log.info("Succès de l'opération d'upload pour {}", host);
-            response.setStatus(HttpServletResponse.SC_OK);
-            response.getWriter().write("Upload réussi");
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(ApiResponse.success(201, file.getOriginalFilename(), "Upload réussi avec succès"));
 
         } catch (Exception e) {
-            log.error("Erreur interceptée dans le contrôleur : {}", e.getMessage());
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            log.error("Erreur interceptée dans le contrôleur lors de l'upload : {}", e.getMessage());
+
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error(500, "Erreur lors de l'upload : " + e.getMessage()));
+
         } finally {
             if (ftpClient != null) {
                 serverService.disconnect(ftpClient);
                 log.debug("Déconnexion du serveur FTP effectuée.");
             }
         }
-
     }
+
+
     @Operation(summary = "Renommer un fichier", description = "Modifie le nom d'un fichier existant sur le serveur FTP.")
     @PatchMapping()
     public ResponseEntity<ApiResponse<FtpResponse<Void>>>  rename(
@@ -125,15 +139,16 @@ public class FileController {
 
             FtpResponse<Void> ftpResponse = fileService.rename(ftpClient, renameRequest.oldName(), renameRequest.newName());
 
-            if (!ftpResponse.succes()) {
-                // Si c'est false, on renvoie une erreur HTTP (ex: 400 Bad Request) et on extrait le message du FTP
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body(ApiResponse.error(400, "Échec du renommage FTP : " + ftpResponse.message()));
-            }
 
-            // Si tout est OK, on renvoie le succès
-            return ResponseEntity.status(HttpStatus.OK)
-                    .body(ApiResponse.success(200, null, "Fichier renommé avec succès"));
+            HttpStatus httpStatus = FtpHttpStatusAdaptator.mapFtpCodeToHttpStatus(ftpResponse.code());
+
+            if (!ftpResponse.succes()) {
+                return ResponseEntity.status(httpStatus)
+                        .body(ApiResponse.error(httpStatus.value(), "Échec du renommage FTP : " + ftpResponse.message()));
+            }
+                // Si tout est OK, on renvoie le succès
+                return ResponseEntity.status(HttpStatus.OK)
+                        .body(ApiResponse.success(200, null, "Fichier renommé avec succès"));
 
         } catch (Exception e) {
 
@@ -150,7 +165,7 @@ public class FileController {
     }
     @Operation(summary = "Supprimer un fichier", description = "Supprime définitivement un fichier sur le serveur FTP.")
     @DeleteMapping()
-    public ResponseEntity<ApiResponse<FtpResponse<Void>>> deleteFile(
+    public ResponseEntity<ApiResponse<Void>> deleteFile(
             @PathVariable String host,
             @RequestParam String path,
             @RequestHeader(value = "X-FTP-Username", defaultValue = "anonymous") String ftpUser,
@@ -165,11 +180,15 @@ public class FileController {
 
             FtpResponse<Void> ftpResponse = fileService.delete(ftpClient, path);
 
+            HttpStatus httpStatus = FtpHttpStatusAdaptator.mapFtpCodeToHttpStatus(ftpResponse.code());
+
             if (!ftpResponse.succes()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, "Échec de suppression FTP : " + ftpResponse.message()));
+                return ResponseEntity.status(httpStatus)
+                        .body(ApiResponse.error(httpStatus.value(), "Échec de suppression FTP : " + ftpResponse.message()));
             }
 
-            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(200,ftpResponse , "Suppréssion réussie : " + ftpResponse.message()));
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(200,null , "Suppréssion réussie : " + ftpResponse.message()));
+
         } catch (Exception e) {
             log.error("Erreur interceptée dans le contrôleur : {}", e.getMessage());
 

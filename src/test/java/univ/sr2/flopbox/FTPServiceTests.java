@@ -165,20 +165,18 @@ class FTPServiceTest {
     @Test
     @DisplayName("downloadFile — téléchargement réussi")
     void downloadFile_succes() throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         when(ftpClient.retrieveFile(anyString(), any())).thenReturn(true);
 
-        assertThatCode(() -> ftpService.downloadFile(ftpClient, "/test.txt", outputStream))
+        assertThatCode(() -> ftpService.downloadFile(ftpClient, "/test.txt"))
                 .doesNotThrowAnyException();
     }
 
     @Test
     @DisplayName("downloadFile — lève une exception si le fichier est introuvable")
     void downloadFile_echec_introuvable() throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         when(ftpClient.retrieveFile(anyString(), any())).thenReturn(false);
 
-        assertThatThrownBy(() -> ftpService.downloadFile(ftpClient, "/inexistant.txt", outputStream))
+        assertThatThrownBy(() -> ftpService.downloadFile(ftpClient, "/inexistant.txt"))
                 .isInstanceOf(IOException.class)
                 .hasMessageContaining("Erreur lors du téléchargement");
     }

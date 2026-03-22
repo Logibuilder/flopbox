@@ -96,40 +96,53 @@ public class FTPService {
             }
         }
     }
-
-    public void uploadFile(FTPClient ftpClient, String path, InputStream inputStream, boolean replace) throws IOException {
+    /**
+     * Transfère un fichier local vers le serveur FTP distant (Upload) en mode binaire passif.
+     * Vérifie au préalable si le fichier existe déjà pour éviter les écrasements accidentels,
+     * sauf si le paramètre 'replace' l'autorise.
+     *
+     * @param ftpClient Le client FTP connecté et authentifié.
+     * @param path Le chemin cible complet (incluant le nom du fichier) sur le serveur FTP.
+     * @param inputStream Le flux de données du fichier à envoyer.
+     * @param replace Si true, écrase le fichier cible s'il existe déjà. Si false, annule l'opération.
+     * @return Un objet FtpResponse contenant le statut, le message et le code de réponse natif du serveur FTP.
+     */
+    public FtpResponse<Void> uploadFile(FTPClient ftpClient, String path, InputStream inputStream, boolean replace) {
         log.info("Début de la procédure d'upload pour le chemin : {}", path);
-        ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
-        log.debug("Passage en mode passif local...");
-        ftpClient.enterLocalPassiveMode();
+        try {
+            ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
+            log.debug("Passage en mode passif local...");
+            ftpClient.enterLocalPassiveMode();
 
-        // Vérifier si le fichier existe déjà
-        log.debug("Vérification de l'existence du fichier : {}", path);
-        String[] existingFiles = ftpClient.listNames(path);
-        boolean exists = (existingFiles != null && existingFiles.length > 0);
+            // Vérifier si le fichier existe déjà
+            log.debug("Vérification de l'existence du fichier : {}", path);
+            String[] existingFiles = ftpClient.listNames(path);
+            boolean exists = (existingFiles != null && existingFiles.length > 0);
 
-        if (exists) {
-            if (!replace) {
-                log.warn("L'upload a échoué : le fichier existe déjà et le remplacement est désactivé.");
-                throw new IOException("Le fichier existe déjà et le remplacement n'est pas autorisé : " + path);
-            }
-            log.info("Le fichier existe déjà. Le mode 'replace' est actif, écrasement en cours...");
-        }
-
-        try (inputStream) {
-            log.debug("Exécution de ftpClient.storeFile()...");
-            boolean success = ftpClient.storeFile(path, inputStream);
-
-            if (!success) {
-                String reply = ftpClient.getReplyString();
-                log.error("Échec critique de l'upload. Réponse du serveur FTP : {}", reply);
-                throw new IOException("Échec de l'upload (Réponse du serveur : " + reply + ")");
+            if (exists && !replace) {
+                log.warn("L'upload a échoué : le fichier existe déjà.");
+                // Si on refuse l'écrasement, on simule une erreur 550 (non autorisé/introuvable) ou 450
+                return new FtpResponse<>(false, "Le fichier existe déjà et le remplacement n'est pas autorisé", 450, null);
             }
 
-            log.info("Upload terminé avec succès pour le fichier : {}", path);
+            try (inputStream) {
+                log.debug("Exécution de ftpClient.storeFile()...");
+                boolean success = ftpClient.storeFile(path, inputStream);
+                int ftpCode = ftpClient.getReplyCode(); // On récupère le code (souvent 226 Transfer Complete)
+
+                if (!success) {
+                    String reply = ftpClient.getReplyString();
+                    log.error("Échec critique de l'upload. Réponse du serveur FTP : {}", reply);
+                    return new FtpResponse<>(false, "Échec de l'upload : " + reply, ftpCode, null);
+                }
+
+                log.info("Upload terminé avec succès pour le fichier : {}", path);
+                return new FtpResponse<>(true, "Upload terminé avec succès", ftpCode, null);
+            }
         } catch (IOException e) {
             log.error("Erreur d'entrée/sortie pendant le transfert FTP : {}", e.getMessage(), e);
-            throw e;
+            // Code 500 générique en cas de crash réseau
+            return new FtpResponse<>(false, "Erreur réseau pendant l'upload : " + e.getMessage(), 500, null);
         }
     }
 
@@ -154,22 +167,26 @@ public class FTPService {
         try {
             boolean success = ftpClient.rename(oldName, newName);
 
+            int ftpCode = ftpClient.getReplyCode();
             if (!success) {
                 return new FtpResponse<>(
                         false,
                         ftpClient.getReplyString(),
+                        ftpCode,
                         null);
             }
 
             return new FtpResponse<>(
                     true,
                     "Fichier renommé avec succès",
+                    ftpCode,
                     null);
         } catch (IOException e) {
             log.error("Erreur IO pendant l'opération : {}", e.getMessage(), e);
             return new FtpResponse<>(
                     false,
                     "Erreur IO : " + e.getMessage(), // Concaténation standard en Java
+                    ftpClient.getReplyCode(),
                     null);
         }
     }
@@ -179,17 +196,17 @@ public class FTPService {
             boolean success = ftpClient.deleteFile(path);
 
             if (success) {
-                return new FtpResponse<>(true, path + " supprimé avec succès", null);
+                return new FtpResponse<>(true, path + " supprimé avec succès", ftpClient.getReplyCode(), null);
             }
 
 
-            return new FtpResponse<>(false, ftpClient.getReplyString(), null);
+            return new FtpResponse<>(false, ftpClient.getReplyString(),ftpClient.getReplyCode(), null);
 
         } catch (IOException e) {
 
             log.error("Erreur IO pendant la suppression : {}", e.getMessage(), e);
 
-            return new FtpResponse<>(false, "Erreur IO suppression : " + e.getMessage(), null);
+            return new FtpResponse<>(false, "Erreur IO suppression : " + e.getMessage(),ftpClient.getReplyCode(), null);
         }
     }
 
@@ -198,17 +215,17 @@ public class FTPService {
             boolean success = ftpClient.removeDirectory(path);
 
             if (success) {
-                return new FtpResponse<>(true, path + " supprimé avec succès", null);
+                return new FtpResponse<>(true, path + " supprimé avec succès",ftpClient.getReplyCode(), null);
             }
 
 
-            return new FtpResponse<>(false, ftpClient.getReplyString(), null);
+            return new FtpResponse<>(false, ftpClient.getReplyString(),ftpClient.getReplyCode(), null);
 
         } catch (IOException e) {
 
             log.error("Erreur IO pendant la suppression : {}", e.getMessage());
 
-            return new FtpResponse<>(false, "Erreur IO suppression : " + e.getMessage(), null);
+            return new FtpResponse<>(false, "Erreur IO suppression : " + e.getMessage(),ftpClient.getReplyCode(), null);
         }
     }
 
@@ -229,6 +246,7 @@ public class FTPService {
                 return new FtpResponse<>(
                         false,
                         "Un répertoire du même nom(" + path+ ") existe déjà",
+                        ftpClient.getReplyCode(),
                         null
                 );
             }
@@ -239,6 +257,7 @@ public class FTPService {
                 return new FtpResponse<>(
                         false,
                         ftpClient.getReplyString(),
+                        ftpClient.getReplyCode(),
                         null
                 );
             }
@@ -246,11 +265,13 @@ public class FTPService {
             return  new FtpResponse<>(
                     true,
                     "Répertoire cré avec succès",
+                    ftpClient.getReplyCode(),
                     null);
         } catch (IOException e) {
             return  new FtpResponse<>(
                     false,
                     "Erreur IO création répertoire : " + e.getMessage(),
+                    ftpClient.getReplyCode(),
                     null
             );
         }

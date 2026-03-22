@@ -89,7 +89,7 @@ class DtoTest {
     @Test
     @DisplayName("FtpResponse — représente un succès FTP")
     void ftpResponse_succes() {
-        FtpResponse<Void> response = new FtpResponse<>(true, "OK", null);
+        FtpResponse<Void> response = new FtpResponse<>(true, "OK", 201,  null);
 
         assertThat(response.succes()).isTrue();
         assertThat(response.message()).isEqualTo("OK");
@@ -99,7 +99,7 @@ class DtoTest {
     @Test
     @DisplayName("FtpResponse — représente un échec FTP avec message natif")
     void ftpResponse_echec() {
-        FtpResponse<Void> response = new FtpResponse<>(false, "550 Permission denied", null);
+        FtpResponse<Void> response = new FtpResponse<>(false, "550 Permission denied",201, null);
 
         assertThat(response.succes()).isFalse();
         assertThat(response.message()).contains("550");
