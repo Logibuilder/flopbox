@@ -16,6 +16,7 @@ import univ.sr2.flopbox.dto.FtpResponse;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.service.DirectoryService;
 import univ.sr2.flopbox.service.ServerService;
+import univ.sr2.flopbox.utils.FtpHttpStatusAdaptator;
 
 import java.io.IOException;
 import java.util.List;
@@ -89,6 +90,8 @@ public class DirectoryController {
 
             FtpResponse<Void> ftpResponse = directoryService.makeDirectory(ftpClient, path);
 
+            int httpCode = FtpHttpStatusAdaptator.mapFtpCodeToHttpCode(ftpResponse.code());
+            HttpStatus httpStatus = FtpHttpStatusAdaptator.mapFtpCodeToHttpStatus(ftpResponse.code());
             if (!ftpResponse.succes()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, "Échec de la création du dossier : " + ftpResponse.message()));
             }
@@ -127,11 +130,13 @@ public class DirectoryController {
 
             FtpResponse<Void> ftpResponse = directoryService.delete(ftpClient, path);
 
+            int httpCode = FtpHttpStatusAdaptator.mapFtpCodeToHttpCode(ftpResponse.code());
+            HttpStatus httpStatus = FtpHttpStatusAdaptator.mapFtpCodeToHttpStatus(ftpResponse.code());
             if (!ftpResponse.succes()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(400, ftpResponse.message()));
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ApiResponse.error(httpCode, ftpResponse.message()));
             }
 
-            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(200, path,"Suppréssion réussie"));
+            return ResponseEntity.status(httpStatus).body(ApiResponse.success(httpCode, path,"Suppréssion réussie"));
         } catch (Exception e) {
             log.error("Erreur interceptée dans le contrôleur : {}", e.getMessage());
 
