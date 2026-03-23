@@ -12,7 +12,7 @@
 
 	<groupId>univ.sr2</groupId>
 	<artifactId>flopbox</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>flopbox</name>
 	<description>flopbox demo</description>
 
