@@ -2,13 +2,20 @@ package univ.sr2.flopbox.service;
 
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import univ.sr2.flopbox.dto.LoginRequest;
+import univ.sr2.flopbox.dto.LoginResponse;
+import univ.sr2.flopbox.dto.TypeToken;
 import univ.sr2.flopbox.dto.UserRequest;
+import univ.sr2.flopbox.model.RefreshToken;
 import univ.sr2.flopbox.model.User;
 import univ.sr2.flopbox.repository.UserRepository;
+
+import java.util.Optional;
 
 
 @Transactional
@@ -22,6 +29,14 @@ public class UserService {
     @Autowired
     PasswordEncoder passwordEncoder;
 
+    @Autowired
+    JwtService jwtService;
+
+    @Autowired
+    RefreshTokenService refreshTokenService;
+
+    @Value("${jwt.access.expiration}")
+    private Long accessTokenDurationMs;
 
     public UserRequest register(UserRequest userRequest) {
 
@@ -38,4 +53,30 @@ public class UserService {
             throw new RuntimeException("Erreur technique lors de la sauvegarde : " + e.getMessage());
         }
     }
+
+    public Optional<User> getUserByMail(String mail) {
+        return userRepository.findByMail(mail);
+    }
+
+    public LoginResponse login(LoginRequest loginRequest) {
+
+        User user = userRepository.findByMail(loginRequest.mail())
+                .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé avec l'email : " + loginRequest.mail()));
+
+        // Vérifier le mot de passe
+        if (!passwordEncoder.matches(loginRequest.password(), user.getPassword())) {
+            throw new RuntimeException("Mot de passe incorrect");
+        }
+
+        // Générer l'Access Token
+        String accessToken = jwtService.generateToken(user, accessTokenDurationMs, TypeToken.ACCESS);
+
+        // Générer le Refresh Token (JWT long stocké en base)
+        RefreshToken refreshToken =  refreshTokenService.createRefreshToken(user.getMail());
+
+        // Retourner la réponse (Le Refresh Token est en base, on renvoie l'Access Token au client)
+        return new LoginResponse(user.getMail(), user.getName(), accessToken, refreshToken.getToken());
+
+    }
+
 }
