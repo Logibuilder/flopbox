@@ -54,4 +54,8 @@ public class JwtService {
     public String getMailFromToken(String token) {
         return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().getSubject();
     }
+
+    public String getTokenTypeFromToken(String token) {
+        return Jwts.parser().verifyWith(key).build().parseSignedClaims(token).getPayload().get("token_type", String.class);
+    }
 }

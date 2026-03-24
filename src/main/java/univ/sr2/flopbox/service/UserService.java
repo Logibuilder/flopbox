@@ -4,6 +4,8 @@ package univ.sr2.flopbox.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,6 +70,7 @@ public class UserService {
             throw new RuntimeException("Mot de passe incorrect");
         }
 
+
         // Générer l'Access Token
         String accessToken = jwtService.generateToken(user, accessTokenDurationMs, TypeToken.ACCESS);
 
@@ -77,6 +80,26 @@ public class UserService {
         // Retourner la réponse (Le Refresh Token est en base, on renvoie l'Access Token au client)
         return new LoginResponse(user.getMail(), user.getName(), accessToken, refreshToken.getToken());
 
+    }
+
+    public UserRequest logout() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
+            throw new RuntimeException("Opération refusée : vous n'êtes pas connecté.");
+        }
+
+        String mail = authentication.getName();
+
+        User user = userRepository.findByMail(mail).orElseThrow(() -> new RuntimeException("Utilisateur introuvable pour la déconnexion."));
+        UserRequest userRequest = UserRequest.toUserRequest(user);
+        try {
+            refreshTokenService.deletByUser(user);
+            SecurityContextHolder.clearContext();
+        } catch (Exception e) {
+            throw new RuntimeException("Erreur technique lors de la déconnexion : " + e.getMessage());
+        }
+        return userRequest;
     }
 
 }

@@ -11,7 +11,10 @@ import univ.sr2.flopbox.dto.ApiResponse;
 import univ.sr2.flopbox.dto.LoginRequest;
 import univ.sr2.flopbox.dto.LoginResponse;
 import univ.sr2.flopbox.dto.UserRequest;
+import univ.sr2.flopbox.model.User;
 import univ.sr2.flopbox.service.UserService;
+
+import javax.naming.spi.ResolveResult;
 
 @Slf4j
 @RestController
@@ -50,6 +53,17 @@ public class AuthController {
             log.error("Erreur de connexion pour {}: {}", loginRequest.mail(), e.getMessage());
 
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(401, "Échec de l'authentification : " + e.getMessage()));
+        }
+    }
+
+    @GetMapping("/logout")
+    public ResponseEntity<ApiResponse<UserRequest>> logout() {
+        try {
+            UserRequest userRequestDisconnected =  userService.logout();
+            return ResponseEntity.status(HttpStatus.OK).body(ApiResponse.success(200, userRequestDisconnected, "Déconnection réussie"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error(403, e.getMessage()));
         }
     }
 
