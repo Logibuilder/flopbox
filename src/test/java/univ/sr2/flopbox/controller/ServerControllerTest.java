@@ -13,6 +13,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import univ.sr2.flopbox.dto.*;
 import univ.sr2.flopbox.model.Server;
+import univ.sr2.flopbox.service.JwtService;
 import univ.sr2.flopbox.service.ServerService;
 
 import java.io.IOException;
@@ -39,6 +40,9 @@ class ServerControllerTest {
 
     @MockitoBean
     private ServerService serverService;
+
+    @MockitoBean
+    private JwtService jwtService;
 
     // POST /api/v1/servers — addServer
 

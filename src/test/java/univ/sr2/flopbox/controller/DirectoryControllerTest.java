@@ -14,6 +14,7 @@ import univ.sr2.flopbox.dto.FtpResponse;
 import univ.sr2.flopbox.dto.Type;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.service.DirectoryService;
+import univ.sr2.flopbox.service.JwtService;
 import univ.sr2.flopbox.service.ServerService;
 
 import java.util.List;
@@ -38,6 +39,9 @@ class DirectoryControllerTest {
 
     @MockitoBean
     private ServerService serverService;
+
+    @MockitoBean
+    private JwtService jwtService;
 
     private final String HOST = "ftp.test.com";
 

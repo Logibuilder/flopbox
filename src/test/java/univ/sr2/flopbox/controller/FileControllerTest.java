@@ -16,6 +16,7 @@ import univ.sr2.flopbox.dto.FtpResponse;
 import univ.sr2.flopbox.dto.RenameRequest;
 import univ.sr2.flopbox.model.Server;
 import univ.sr2.flopbox.service.FileService;
+import univ.sr2.flopbox.service.JwtService;
 import univ.sr2.flopbox.service.ServerService;
 
 import java.io.ByteArrayInputStream;
@@ -44,6 +45,9 @@ class FileControllerTest {
 
     @MockitoBean
     private ServerService serverService;
+
+    @MockitoBean
+    private JwtService jwtService;
 
     private final String HOST = "ftp.test.com";
 
