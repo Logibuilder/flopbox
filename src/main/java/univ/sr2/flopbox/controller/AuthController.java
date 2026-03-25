@@ -2,6 +2,7 @@ package univ.sr2.flopbox.controller;
 
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import javax.naming.spi.ResolveResult;
 
 @Slf4j
 @RestController
+@Tag(description = "Controller pour la création, la connexion et la déconnexion des utilisateurs", name = "Authenfication et autorisation")
 @RequestMapping("api/v1/auth")
 public class AuthController {
 
@@ -41,7 +43,7 @@ public class AuthController {
         }
     }
 
-
+    @Operation(summary = "Se connecter", description = "Se connecter et avoir un accessToken et un refreshToken.")
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
             @RequestBody LoginRequest loginRequest
@@ -55,7 +57,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(ApiResponse.error(401, "Échec de l'authentification : " + e.getMessage()));
         }
     }
-
+    @Operation(summary = "Se déconnecter ", description = "Se déconnecter en supprimant son refreshToken")
     @GetMapping("/logout")
     public ResponseEntity<ApiResponse<UserRequest>> logout() {
         try {

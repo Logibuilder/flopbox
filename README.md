@@ -75,6 +75,41 @@ L'application démarre sur le port **8080**. La documentation Swagger UI est dis
 ### Pattern DTO
 `DTO`  est utilisé pour transporter des données entre les processus afin de réduire le nombre d'appels de méthodes ou de masquer la structure interne de la base de données. Par exemple, ServerRequest permet de créer un serveur sans exposer l'ID généré par la base de données au client, séparant ainsi l'entité JPA Server de la couche de présentation.
 
+## Sécurité 
+
+
+
+### Vue d'ensemble
+
+FlopBox utilise une authentification **sans état (stateless)** basée sur des jetons JWT signés avec l'algorithme HMAC-SHA512. Chaque requête sur un endpoint protégé doit contenir un `Authorization: Bearer <token>` valide dans ses en-têtes HTTP.
+
+Deux types de tokens coexistent :
+
+| Type | Durée | Rôle |
+|---|---|---|
+| **ACCESS** | 15 minutes (`jwt.access.expiration=900000`) | Autoriser l'accès aux endpoints protégés |
+| **REFRESH** | 7 jours (`jwt.refresh.expiration=604800000`) | Obtenir un nouvel access token sans se reconnecter |
+
+Le refresh token est stocké en base de données (table `refreshtoken`) et est invalidé à chaque déconnexion ou à la génération d'un nouveau refresh token.
+
+### Configuration de la chaîne de filtres
+
+![conf](doc/diagramme_activite_security.png)
+
+### Diagramme de séquence — Accès à un endpoint protégé (GET /api/v1/servers)
+
+![conf](doc/digramme_sequence_get_servers.png)
+
+#### Inscription — `POST /api/v1/auth/register`
+
+
+
+
+#### Diagramme séquence Connexion — `POST /api/v1/auth/login`
+
+
+
+[Diagramme séquence - connetion](doc/diagramme_sequence_login.png)
 
 ---
 
@@ -218,6 +253,53 @@ for (ServerCredentials creds : credentials.values()) {
   } finally {
     if (ftpClient != null) this.disconnect(ftpClient); // toujours déconnecté
   }
+}
+```
+
+### 6. Génération d'un token JWT typé
+
+`JwtService.generateToken` produit un token JWT signé HMAC-SHA512 avec un claim `token_type` qui distingue les access tokens des refresh tokens, empêchant leur usage croisé.
+
+```java
+public String generateToken(User user, Long expiryTimeMs, TypeToken type) {
+  return Jwts.builder()
+    .subject(user.getMail())
+    .issuedAt(new Date())
+    .expiration(new Date(System.currentTimeMillis() + expiryTimeMs))
+    .claim("token_type", type)   // ACCESS ou REFRESH
+    .signWith(key)               // HMAC-SHA512 avec clé 512 bits
+    .compact();
+}
+```
+
+
+### 7. Filtre JWT — vérification du type de token
+
+`JwtAuthenticationFilter` extrait et valide le token, mais ne peuple le `SecurityContextHolder` que si `token_type == "ACCESS"`. Un refresh token valide ne peut donc pas servir à accéder aux ressources protégées.
+
+```java
+@Override
+protected void doFilterInternal(HttpServletRequest request,
+                                HttpServletResponse response,
+                                FilterChain filterChain) throws ServletException, IOException {
+  String authHeader = request.getHeader("Authorization");
+ 
+  if (authHeader != null && authHeader.startsWith("Bearer ")) {
+    String token = authHeader.substring(7);
+ 
+    if (jwtService.validateToken(token)) {
+      String type = jwtService.getTokenTypeFromToken(token);
+ 
+      if (TypeToken.ACCESS.toString().equals(type)) {        // ← garde-fou sur le type
+        String mail = jwtService.getMailFromToken(token);
+        UsernamePasswordAuthenticationToken auth =
+          new UsernamePasswordAuthenticationToken(mail, null, new ArrayList<>());
+        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+      }
+    }
+  }
+  filterChain.doFilter(request, response);
 }
 ```
 
