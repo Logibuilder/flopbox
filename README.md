@@ -220,3 +220,8 @@ for (ServerCredentials creds : credentials.values()) {
   }
 }
 ```
+
+## Ressources consultées
+
+- [JJWT](https://github.com/jwtk/jjwt) – Bibliothèque pour la gestion des jetons JWT
+- [jwtsecrets.com](https://jwtsecrets.com/) - pour la génération de la clé 512bits
