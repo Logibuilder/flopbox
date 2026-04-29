@@ -22,6 +22,7 @@ import univ.sr2.flopbox.service.FtpInputStream;
 import univ.sr2.flopbox.service.ServerService;
 
 import java.awt.*;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +84,7 @@ public class FileController {
     public ResponseEntity<ApiResponse<String>> uploadFile(
             @PathVariable String host,
             @RequestParam String path,
-            @RequestParam("file") MultipartFile file,
+            @RequestBody byte[] file,
             @RequestHeader(value = "X-FTP-Username", defaultValue = "anonymous") String ftpUser,
             @RequestHeader(value = "X-FTP-Password", defaultValue = "") String ftpPassword) {
 
@@ -93,7 +94,8 @@ public class FileController {
         try {
             ftpClient = serverService.connect(server, ftpUser, ftpPassword);
 
-            FtpResponse<Void> ftpResponse = fileService.uploadFile(ftpClient, path, file.getInputStream(), true);
+            InputStream inputStream = new ByteArrayInputStream(file);
+            FtpResponse<Void> ftpResponse = fileService.uploadFile(ftpClient, path, inputStream, true);
 
             HttpStatus httpStatus = FtpHttpStatusAdaptator.mapFtpCodeToHttpStatus(ftpResponse.code());
 
@@ -104,7 +106,7 @@ public class FileController {
             log.info("Succès de l'opération d'upload pour {}", host);
 
             return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.success(201, file.getOriginalFilename(), "Upload réussi avec succès"));
+                    .body(ApiResponse.success(201, path, "Upload réussi avec succès"));
 
         } catch (Exception e) {
             log.error("Erreur interceptée dans le contrôleur lors de l'upload : {}", e.getMessage());
